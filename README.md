@@ -27,6 +27,19 @@ system layer the PS2 firmware would have provided.
 See [PROGRESS.md](PROGRESS.md) for the detailed ledger, including the bugs
 that were found and how.
 
+## Documentation
+
+| File | For |
+|---|---|
+| [PRD.md](PRD.md) | What the project is building and why |
+| [OUTPUT.md](OUTPUT.md) | What has been produced, with evidence |
+| [PROGRESS.md](PROGRESS.md) | Working ledger — verified facts, open questions, dead ends |
+| [CLAUDE.md](CLAUDE.md) | Instructions for AI agents continuing the work |
+
+If you are picking this up fresh, read `CLAUDE.md` first. Several formats here
+have plausible-looking wrong answers that are documented specifically so they
+do not get re-derived.
+
 ## Building
 
 Requires Rust 1.98 or newer.
