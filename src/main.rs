@@ -19,6 +19,7 @@ mod afs;
 mod fst;
 mod recomp;
 mod tim2;
+mod viewer;
 
 use std::fs;
 use std::io::Write;
@@ -104,6 +105,26 @@ fn run(args: &[String]) -> anyhow::Result<()> {
                 .map(PathBuf::from)
                 .ok_or_else(|| anyhow::anyhow!("missing output directory"))?;
             cmd_extract_all(&dir, &out_dir)
+        }
+        Some("view") => {
+            let dir = args
+                .get(2)
+                .map(PathBuf::from)
+                .ok_or_else(|| anyhow::anyhow!("usage: view <disc-dir>"))?;
+            viewer::run(&viewer::resolve_dir(&dir)).map_err(|e| anyhow::anyhow!("{e}"))
+        }
+        Some("view-list") => {
+            let dir = args
+                .get(2)
+                .map(PathBuf::from)
+                .ok_or_else(|| anyhow::anyhow!("usage: view-list <disc-dir>"))?;
+            let textures = viewer::list(&viewer::resolve_dir(&dir))
+                .map_err(|e| anyhow::anyhow!("{e}"))?;
+            println!("{} textures:", textures.len());
+            for (i, (name, w, h, psm)) in textures.iter().enumerate() {
+                println!("  [{i:>2}] {name:<24} {w}x{h} {psm:?}");
+            }
+            Ok(())
         }
         Some("help") | Some("--help") | Some("-h") | None => {
             print_usage();

@@ -9,6 +9,7 @@ byteorder = "1.5"
 thiserror = "1.0"
 anyhow = "1.0"
 image = "0.25"
+minifb = "0.29.0"
 
 [profile.release]
 opt-level = 3

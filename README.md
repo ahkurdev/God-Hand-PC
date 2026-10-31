@@ -18,7 +18,8 @@ system layer the PS2 firmware would have provided.
 |---|---|
 | AFS archive reader | Working — 1563 entries from the shipped disc |
 | FST manifest reader | Working — 1563 names, 81 dynamic `.rel` modules |
-| TIM2 texture decoder | Working — verified visually against real game art |
+| TIM2 texture decoder | Working — 33 textures, verified visually |
+| Native texture viewer | Working — `view` opens a window, arrow keys step |
 | MIPS → x86-64 lifter | 76.8% of the shipped `.text`, verified by execution |
 | MIPS memory model | Working — 2 GB window, `r12`-based addressing |
 | Execution harness | Working — 68 unit tests, 19 of which run emitted code |
@@ -57,7 +58,17 @@ godhand-rs dump-strings <disc-dir> <index>
 
 # Measure how much of the shipped .text the lifter covers
 godhand-rs recomp-profile <disc-dir>
+
+# Open a native window and step through every decoded texture
+godhand-rs view <disc-dir>
+
+# List what the viewer would load, without opening a window
+godhand-rs view-list <disc-dir>
 ```
+
+The viewer steps through all 33 textures with the Left and Right arrow keys
+and quits on Escape. It is deliberately minimal — a framebuffer, no shaders —
+because the point is to show that real game art reaches the screen.
 
 ## Layout
 
@@ -67,6 +78,7 @@ src/
   fst.rs        GODHAND.FST manifest reader
   tim2.rs       Sony TIM2 texture decoder
   main.rs       CLI entry point
+  viewer.rs     Native window texture viewer
   recomp/
     decode.rs   MIPS R5900 instruction decoder
     lifter.rs   MIPS → x86-64 translation
