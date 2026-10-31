@@ -1,0 +1,19 @@
+# Rust build output
+/target
+
+# Editor and OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Debug scratch files from investigation sessions
+_*.txt
+_*.png
+_*.rgba
+_*.log
+
+# Extracted game data — never commit copyrighted assets.
+# Point the tools at your own extracted disc instead.
+../extracted/

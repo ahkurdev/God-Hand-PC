@@ -1,0 +1,16 @@
+[package]
+name = "godhand-rs"
+version = "0.1.0"
+edition = "2021"
+description = "Native Rust port of God Hand (PS2, SLES-544.90) - asset pipeline and engine"
+
+[dependencies]
+byteorder = "1.5"
+thiserror = "1.0"
+anyhow = "1.0"
+image = "0.25"
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
