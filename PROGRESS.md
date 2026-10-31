@@ -15,6 +15,16 @@ Two real God Hand textures now decode and display correctly:
 Both come from the shipped `_DATA.AFS` via the Rust pipeline. This is the
 first point at which the output is recognisably the game rather than noise.
 
+### Proven at scale
+
+`godhand-rs extract-all <disc-dir> <out-dir>` decodes every TIM2 in the
+archive: **33 textures, 0 failures, 1530 non-TIM2 entries correctly skipped.**
+
+The set includes Shannon reading in a Japanese room, Shannon riding a
+carousel horse, and Shannon pulling a casino slot lever beside a male
+character. Consistency across 33 unrelated textures is what rules out
+luck — a handful of hand-picked successes could always be coincidence.
+
 ### The two bugs that had blocked this for a long time
 
 **1. Textures are stored linearly, not swizzled.** Every swizzle candidate

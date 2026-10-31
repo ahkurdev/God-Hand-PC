@@ -94,6 +94,17 @@ fn run(args: &[String]) -> anyhow::Result<()> {
                 .ok_or_else(|| anyhow::anyhow!("usage: recomp-profile <disc-dir>"))?;
             cmd_recomp_profile(&dir)
         }
+        Some("extract-all") => {
+            let dir = args
+                .get(2)
+                .map(PathBuf::from)
+                .ok_or_else(|| anyhow::anyhow!("usage: extract-all <disc-dir> <out-dir>"))?;
+            let out_dir = args
+                .get(3)
+                .map(PathBuf::from)
+                .ok_or_else(|| anyhow::anyhow!("missing output directory"))?;
+            cmd_extract_all(&dir, &out_dir)
+        }
         Some("help") | Some("--help") | Some("-h") | None => {
             print_usage();
             Ok(())
@@ -113,7 +124,8 @@ fn print_usage() {
          Usage:\n\
          \x20 inspect <disc-dir>              report disc + AFS + FST structure\n\
          \x20 list <disc-dir> [filter]        list AFS entries with FST names\n\
-         \x20 extract <disc-dir> <i> <out>    decode AFS entry <i> as TIM2 to a raw RGBA8 file\n\
+         \x20 extract <disc-dir> <i> <out>    decode AFS entry <i> as TIM2 to a PNG\n\
+         \x20 extract-all <disc-dir> <dir>    decode every TIM2 in the archive into <dir>\n\
          \x20 dump-strings <disc-dir> <i>     printable strings from AFS entry <i>\n\
          \n\
          <disc-dir> is the directory holding {AFS_NAME}, {FST_NAME} and {ELF_NAME}."
@@ -280,6 +292,90 @@ fn cmd_dump_strings(dir: &Path, index: usize) -> anyhow::Result<()> {
     if current.len() >= 4 {
         println!("  {}", String::from_utf8_lossy(&current));
     }
+    Ok(())
+}
+
+/// Decode every TIM2 texture in the archive into an output directory.
+///
+/// Batch extraction is how the pipeline gets proven at scale: a handful of
+/// hand-picked textures can look right by luck, but 35 of them decoding
+/// without a single failure is a different claim.
+fn cmd_extract_all(dir: &Path, out_dir: &Path) -> anyhow::Result<()> {
+    let afs_path = disc_file(dir, AFS_NAME)?;
+    let fst_path = disc_file(dir, FST_NAME)?;
+    let afs = afs::Afs::open(&afs_path)?;
+    let fst = fst::Fst::parse(&fs::read(&fst_path)?)?;
+
+    fs::create_dir_all(out_dir)?;
+
+    let mut ok = 0usize;
+    let mut skipped = 0usize;
+    let mut failed = 0usize;
+
+    for (index, _entry) in afs.iter() {
+        let name = fst.name_for_index(index).unwrap_or("<unnamed>");
+        let bytes = match afs.read_entry(&afs_path, index) {
+            Ok(b) => b,
+            Err(e) => {
+                eprintln!("[{index}] {name}: read failed: {e}");
+                failed += 1;
+                continue;
+            }
+        };
+
+        // Only entries that actually parse as TIM2 are textures. The FST names
+        // entries by logical role, so a `.tm2` name may hold an AFS, a SES
+        // bank, or a REL module instead.
+        let texture = match tim2::Tim2::parse(&bytes) {
+            Ok(t) => t,
+            Err(_) => {
+                skipped += 1;
+                continue;
+            }
+        };
+        let Some(image) = texture.first() else {
+            skipped += 1;
+            continue;
+        };
+
+        let rgba = match image.to_rgba8() {
+            Ok(r) => r,
+            Err(e) => {
+                eprintln!("[{index}] {name}: decode failed: {e}");
+                failed += 1;
+                continue;
+            }
+        };
+        let Some(img) = image::RgbaImage::from_raw(image.width, image.height, rgba) else {
+            eprintln!("[{index}] {name}: pixel buffer has wrong length");
+            failed += 1;
+            continue;
+        };
+
+        // Sanitise the name for the filesystem: keep alphanumerics, dots and
+        // dashes, and prefix the index so ordering is stable.
+        let safe: String = name
+            .chars()
+            .map(|c| {
+                if c.is_ascii_alphanumeric() || c == '.' || c == '-' {
+                    c
+                } else {
+                    '_'
+                }
+            })
+            .collect();
+        let out_path = out_dir.join(format!("{index:04}_{safe}.png"));
+        if let Err(e) = img.save(&out_path) {
+            eprintln!("[{index}] {name}: write failed: {e}");
+            failed += 1;
+            continue;
+        }
+        println!("[{index:>4}] {name:<24} {}x{} -> {}", image.width, image.height, out_path.display());
+        ok += 1;
+    }
+
+    println!();
+    println!("decoded {ok} textures, skipped {skipped} non-TIM2 entries, {failed} failed");
     Ok(())
 }
 

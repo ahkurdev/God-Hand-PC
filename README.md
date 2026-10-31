@@ -49,6 +49,9 @@ godhand-rs list <disc-dir> [filter]
 # Decode one AFS entry as a TIM2 texture to PNG
 godhand-rs extract <disc-dir> <index> <out.png>
 
+# Decode every TIM2 in the archive into a directory
+godhand-rs extract-all <disc-dir> <out-dir>
+
 # Printable strings from an AFS entry
 godhand-rs dump-strings <disc-dir> <index>
 
